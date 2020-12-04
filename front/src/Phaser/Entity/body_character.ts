@@ -1,6 +1,7 @@
 import LoaderPlugin = Phaser.Loader.LoaderPlugin;
 import {PLAYER_RESOURCES, PlayerResourceDescriptionInterface} from "./Character";
 import {CharacterTexture} from "../../Connexion/LocalUser";
+import {gameMenuIconName} from "../Components/GameMenuIcon";
 
 export interface BodyResourceDescriptionInterface {
     name: string,

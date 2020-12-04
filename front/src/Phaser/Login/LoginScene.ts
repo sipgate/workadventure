@@ -1,9 +1,7 @@
 import {gameManager} from "../Game/GameManager";
 import {TextField} from "../Components/TextField";
 import {TextInput} from "../Components/TextInput";
-import {ClickButton} from "../Components/ClickButton";
 import Image = Phaser.GameObjects.Image;
-import Rectangle = Phaser.GameObjects.Rectangle;
 import {PLAYER_RESOURCES, PlayerResourceDescriptionInterface} from "../Entity/Character";
 import {cypressAsserter} from "../../Cypress/CypressAsserter";
 import {SelectCharacterSceneName} from "./SelectCharacterScene";
@@ -33,6 +31,8 @@ export class LoginScene extends ResizableScene {
     }
 
     preload() {
+
+        console.log('preload login')
         cypressAsserter.preloadStarted();
         //this.load.image(LoginTextures.playButton, "resources/objects/play_button.png");
         this.load.image(LoginTextures.icon, "resources/logos/tcm_full.png");
@@ -87,7 +87,8 @@ export class LoginScene extends ResizableScene {
     private login(name: string): void {
         gameManager.setPlayerName(name);
 
-        this.scene.start(SelectCharacterSceneName);
+        this.scene.sleep(LoginSceneName)
+        this.scene.run(SelectCharacterSceneName);
     }
 
     public onResize(ev: UIEvent): void {

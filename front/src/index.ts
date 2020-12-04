@@ -14,6 +14,7 @@ import {ResizableScene} from "./Phaser/Login/ResizableScene";
 import {EntryScene} from "./Phaser/Login/EntryScene";
 import {coWebsiteManager} from "./WebRtc/CoWebsiteManager";
 import {GAME_QUALITY_SELECT} from "./Administration/ConsoleGlobalMessageManager";
+import {MenuScene} from "./Phaser/Menu/MenuScene";
 
 // Load Jitsi if the environment variable is set.
 if (JITSI_URL) {
@@ -66,9 +67,12 @@ const config: GameConfig = {
     width: width / RESOLUTION,
     height: height / RESOLUTION,
     parent: "game",
-    scene: [EntryScene, LoginScene, SelectCharacterScene, EnableCameraScene, ReconnectingScene, FourOFourScene, CustomizeScene],
+    scene: [EntryScene, LoginScene, SelectCharacterScene, EnableCameraScene, ReconnectingScene, FourOFourScene, CustomizeScene, MenuScene],
     zoom: RESOLUTION,
     fps: fps,
+    dom: {
+        createContainer: true
+    },
     physics: {
         default: "arcade",
         arcade: {

@@ -40,6 +40,7 @@ export class SelectCharacterScene extends ResizableScene {
     }
 
     preload() {
+        console.log('preload select')
         this.load.image(LoginTextures.playButton, "resources/objects/play_button.png");
         this.load.image(LoginTextures.icon, "resources/logos/tcm_full.png");
         // Note: arcade.png from the Phaser 3 examples at: https://github.com/photonstorm/phaser3-examples/tree/master/public/assets/fonts/bitmap
@@ -57,6 +58,7 @@ export class SelectCharacterScene extends ResizableScene {
     }
 
     create() {
+        console.log('create select')
         this.textField = new TextField(this, this.game.renderer.width / 2, 50, 'Select your character');
 
         this.pressReturnField = new TextField(this, this.game.renderer.width / 2, 256, 'Press enter to start');
@@ -116,11 +118,12 @@ export class SelectCharacterScene extends ResizableScene {
     }
 
     private nextScene(): void {
+        this.scene.sleep(SelectCharacterSceneName);
         if (this.selectedPlayer !== null) {
             gameManager.setCharacterLayers([this.selectedPlayer.texture.key]);
-            this.scene.start(EnableCameraSceneName);
+            this.scene.run(EnableCameraSceneName);
         } else {
-            this.scene.start(CustomizeSceneName);
+            this.scene.run(CustomizeSceneName);
         }
     }
 

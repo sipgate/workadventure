@@ -1,6 +1,7 @@
 import {GameScene} from "./GameScene";
 import {connectionManager} from "../../Connexion/ConnectionManager";
 import {Room} from "../../Connexion/Room";
+import {MenuSceneName} from "../Menu/MenuScene";
 
 export interface HasMovedEvent {
     direction: string;
@@ -9,10 +10,15 @@ export interface HasMovedEvent {
     y: number;
 }
 
+/**
+ * This class should be responsible for any scene starting/stopping
+ */
 export class GameManager {
     private playerName!: string;
     private characterLayers!: string[];
     private startRoom!:Room;
+    private lastGameSceneName: string|null = null;
+    private openingSceneId: string|null = null;
 
     public async init(scenePlugin: Phaser.Scenes.ScenePlugin) {
         this.startRoom = await connectionManager.initGameConnexion();
@@ -21,6 +27,10 @@ export class GameManager {
 
     public setPlayerName(name: string): void {
         this.playerName = name;
+    }
+
+    public setLastGameSceneName(name: string): void {
+        this.lastGameSceneName = name;
     }
 
     public setCharacterLayers(layers: string[]): void {
@@ -48,7 +58,41 @@ export class GameManager {
     }
 
     public goToStartingMap(scenePlugin: Phaser.Scenes.ScenePlugin): void {
-        scenePlugin.start(this.startRoom.id);
+        console.log('starting '+ (this.lastGameSceneName || this.startRoom.id))
+        scenePlugin.start(this.lastGameSceneName || this.startRoom.id);
+    }
+
+    menuIsOpened(): boolean {
+        return this.openingSceneId !== null;
+    }
+
+    openMenu(scene: GameScene) {
+        if (this.openingSceneId !== null) return;
+
+        scene.scene.launch(MenuSceneName);
+        this.openingSceneId = scene.scene.key;
+    }
+    closeMenu(scene: Phaser.Scene) {
+        if (this.openingSceneId === null) return;
+
+        scene.scene.stop(MenuSceneName);
+        this.openingSceneId = null;
+    }
+
+    /**
+     * Temporary leave a gameScene to go back to the loginScene for example.
+     * This will close the socket connections and stop the gameScene, but won't remove it.
+     */
+    leaveGame(scene: Phaser.Scene, targetSceneName: string): void {
+        if (this.openingSceneId === null) return;
+
+        gameManager.setLastGameSceneName(this.openingSceneId);
+        const gameScene: GameScene = scene.scene.get(this.openingSceneId) as GameScene;
+        gameScene.cleanupClosingScene();
+        scene.scene.stop(this.openingSceneId);
+        scene.scene.stop(MenuSceneName);
+        scene.scene.run(targetSceneName);
+        this.openingSceneId = null;
     }
 }
 
