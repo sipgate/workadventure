@@ -50,7 +50,14 @@ class ConnectionManager {
             }
             let roomId: string
             if (connexionType === GameConnexionTypes.empty) {
-                const defaultMapUrl = window.location.host.replace('play.', 'maps.') + URL_ROOM_STARTED;
+                let defaultMapUrl = ""
+                if (URL_ROOM_STARTED.startsWith("/_/global/")) {
+                    // do not add window.location to url because an global url was given as start map
+                    defaultMapUrl = URL_ROOM_STARTED.replace("/_/global/", "");
+                } else {
+                    defaultMapUrl = window.location.host.replace('play.', 'maps.') + URL_ROOM_STARTED;
+                }
+
                 roomId = urlManager.editUrlForRoom(defaultMapUrl, null, null);
             } else {
                 roomId = window.location.pathname + window.location.hash;
