@@ -303,7 +303,7 @@ export class GameScene extends ResizableScene implements CenterListener {
     create(): void {
         urlManager.pushRoomIdToUrl(this.room);
         this.startLayerName = urlManager.getStartLayerNameFromUrl();
-        
+
         //initalise map
         this.Map = this.add.tilemap(this.MapUrlFile);
         this.gameMap = new GameMap(this.mapFile);
@@ -321,7 +321,7 @@ export class GameScene extends ResizableScene implements CenterListener {
         for (const layer of this.mapFile.layers) {
             if (layer.type === 'tilelayer') {
                 this.addLayer(this.Map.createStaticLayer(layer.name, this.Terrains, 0, 0).setDepth(depth));
-                
+
                 const exitSceneUrl = this.getExitSceneUrl(layer);
                 if (exitSceneUrl !== undefined) {
                     this.loadNextGame(exitSceneUrl);
@@ -586,6 +586,8 @@ export class GameScene extends ResizableScene implements CenterListener {
                 const openWebsiteFunction = () => {
                     coWebsiteManager.loadCoWebsite(newValue as string);
                     layoutManager.removeActionButton('openWebsite', this.userInputManager);
+                    const closeButton = document.getElementById("cowebsite-close")
+                    if (closeButton) closeButton.onclick = (event) => coWebsiteManager.closeCoWebsite()
                 };
 
                 const openWebsiteTriggerValue = allProps.get(TRIGGER_WEBSITE_PROPERTIES);
@@ -632,7 +634,7 @@ export class GameScene extends ResizableScene implements CenterListener {
             }
         });
     }
-    
+
     private onMapExit(exitKey: string) {
         const {roomId, hash} = Room.getIdFromIdentifier(exitKey, this.MapUrlFile, this.instance);
         if (!roomId) throw new Error('Could not find the room from its exit key: '+exitKey);
