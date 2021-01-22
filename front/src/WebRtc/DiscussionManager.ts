@@ -1,5 +1,5 @@
 import {HtmlUtils} from "./HtmlUtils";
-import {MediaManager, ReportCallback, UpdatedLocalStreamCallback} from "./MediaManager";
+import {mediaManager, ReportCallback} from "./MediaManager";
 import {UserInputManager} from "../Phaser/UserInput/UserInputManager";
 import {connectionManager} from "../Connexion/ConnectionManager";
 import {GameConnexionTypes} from "../Url/UrlManager";
@@ -13,7 +13,6 @@ export class DiscussionManager {
     private divParticipants?: HTMLDivElement;
     private nbpParticipants?: HTMLParagraphElement;
     private divMessages?: HTMLParagraphElement;
-    private buttonActiveDiscussion?: HTMLButtonElement;
 
     private participants: Map<number|string, HTMLDivElement> = new Map<number|string, HTMLDivElement>();
 
@@ -23,9 +22,9 @@ export class DiscussionManager {
 
     private userInputManager?: UserInputManager;
 
-    constructor(private mediaManager: MediaManager, name: string) {
+    constructor() {
         this.mainContainer = HtmlUtils.getElementByIdOrFail<HTMLDivElement>('main-container');
-        this.createDiscussPart(name);
+        this.createDiscussPart(''); //todo: why do we always use empty string?
     }
 
     private createDiscussPart(name: string) {
@@ -33,20 +32,12 @@ export class DiscussionManager {
         this.divDiscuss.classList.add('discussion');
 
         const buttonCloseDiscussion: HTMLButtonElement = document.createElement('button');
-        this.buttonActiveDiscussion = document.createElement('button');
         buttonCloseDiscussion.classList.add('close-btn');
         buttonCloseDiscussion.innerHTML = `<img src="resources/logos/close.svg"/>`;
         buttonCloseDiscussion.addEventListener('click', () => {
             this.hideDiscussion();
-            this.showButtonDiscussionBtn();
-        });
-        this.buttonActiveDiscussion.classList.add('active-btn');
-        this.buttonActiveDiscussion.innerHTML = `<img src="resources/logos/discussion.svg"/>`;
-        this.buttonActiveDiscussion.addEventListener('click', () => {
-            this.showDiscussionPart();
         });
         this.divDiscuss.appendChild(buttonCloseDiscussion);
-        this.divDiscuss.appendChild(this.buttonActiveDiscussion);
 
         const myName: HTMLParagraphElement = document.createElement('p');
         myName.innerText = name.toUpperCase();
@@ -68,6 +59,16 @@ export class DiscussionManager {
         const sendDivMessage: HTMLDivElement = document.createElement('div');
         sendDivMessage.classList.add('send-message');
         const inputMessage: HTMLInputElement = document.createElement('input');
+        inputMessage.onfocus = () => {
+            if(this.userInputManager) {
+                this.userInputManager.clearAllInputKeyboard();
+            }
+        }
+        inputMessage.onblur = () => {
+            if(this.userInputManager) {
+                this.userInputManager.initKeyBoardEvent();
+            }
+        }
         inputMessage.type = "text";
         inputMessage.addEventListener('keyup', (event: KeyboardEvent) => {
             if (event.key === 'Enter') {
@@ -128,7 +129,7 @@ export class DiscussionManager {
             reportBanUserAction.innerText = 'Report';
             reportBanUserAction.addEventListener('click', () => {
                 if(reportCallback) {
-                    this.mediaManager.showReportModal(`${userId}`, name ?? '', reportCallback);
+                    mediaManager.showReportModal(`${userId}`, name ?? '', reportCallback);
                 }else{
                     console.info('report feature is not activated!');
                 }
@@ -139,7 +140,6 @@ export class DiscussionManager {
         this.divParticipants?.appendChild(divParticipant);
 
         this.participants.set(userId, divParticipant);
-        this.showButtonDiscussionBtn();
 
         this.updateParticipant(this.participants.size);
     }
@@ -149,6 +149,15 @@ export class DiscussionManager {
             return;
         }
         this.nbpParticipants.innerText = `PARTICIPANTS (${nb})`;
+    }
+
+    private urlify(text: string) {
+        const urlRegex = /(https?:\/\/[^\s]+)/g;
+        return text.replace(urlRegex, (url: string) => {
+            return '<a href="' + url + '" target="_blank">' + url + '</a>';
+        })
+        // or alternatively
+        // return text.replace(urlRegex, '<a href="$1">$1</a>')
     }
 
     public addMessage(name: string, message: string, isMe: boolean = false) {
@@ -170,11 +179,18 @@ export class DiscussionManager {
         divMessage.appendChild(pMessage);
 
         const userMessage: HTMLParagraphElement = document.createElement('p');
-        userMessage.innerText = message;
+        userMessage.innerHTML = this.urlify(message);
         userMessage.classList.add('body');
         divMessage.appendChild(userMessage);
-
         this.divMessages?.appendChild(divMessage);
+
+        //automatic scroll when there are new message
+        setTimeout(() => {
+            this.divMessages?.scroll({
+                top: this.divMessages?.scrollTop + divMessage.getBoundingClientRect().y,
+                behavior: 'smooth'
+            });
+        }, 200);
     }
 
     public removeParticipant(userId: number|string){
@@ -184,9 +200,6 @@ export class DiscussionManager {
             this.participants.delete(userId);
         }
         //if all participant leave, hide discussion button
-        if(this.participants.size === 1){
-            this.hideButtonDiscussionBtn();
-        }
 
         this.sendMessageCallBack.delete(userId);
     }
@@ -199,40 +212,23 @@ export class DiscussionManager {
         return this.activeDiscussion;
     }
 
-    private showButtonDiscussionBtn(){
-        //if it's first participant, show discussion button
-        if(this.activatedDiscussion || this.participants.size === 1) {
-            return;
-        }
-        this.buttonActiveDiscussion?.classList.add('active');
-    }
-
     private showDiscussion(){
         this.activeDiscussion = true;
-        if(this.userInputManager) {
-            this.userInputManager.clearAllInputKeyboard();
-        }
         this.divDiscuss?.classList.add('active');
     }
 
     private hideDiscussion(){
         this.activeDiscussion = false;
-        if(this.userInputManager) {
-            this.userInputManager.initKeyBoardEvent();
-        }
         this.divDiscuss?.classList.remove('active');
     }
-
-    private hideButtonDiscussionBtn(){
-        this.buttonActiveDiscussion?.classList.remove('active');
-    }
-
+    
     public setUserInputManager(userInputManager : UserInputManager){
         this.userInputManager = userInputManager;
     }
 
     public showDiscussionPart(){
         this.showDiscussion();
-        this.hideButtonDiscussionBtn();
     }
 }
+
+export const discussionManager = new DiscussionManager();

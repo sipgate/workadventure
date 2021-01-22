@@ -6,13 +6,15 @@ import {LoginScene} from "./Phaser/Login/LoginScene";
 import {ReconnectingScene} from "./Phaser/Reconnecting/ReconnectingScene";
 import {SelectCharacterScene} from "./Phaser/Login/SelectCharacterScene";
 import {EnableCameraScene} from "./Phaser/Login/EnableCameraScene";
-import {FourOFourScene} from "./Phaser/Reconnecting/FourOFourScene";
 import WebGLRenderer = Phaser.Renderer.WebGL.WebGLRenderer;
 import {OutlinePipeline} from "./Phaser/Shaders/OutlinePipeline";
 import {CustomizeScene} from "./Phaser/Login/CustomizeScene";
 import {ResizableScene} from "./Phaser/Login/ResizableScene";
 import {EntryScene} from "./Phaser/Login/EntryScene";
 import {coWebsiteManager} from "./WebRtc/CoWebsiteManager";
+import {MenuScene} from "./Phaser/Menu/MenuScene";
+import {localUserStore} from "./Connexion/LocalUserStore";
+import {ErrorScene} from "./Phaser/Reconnecting/ErrorScene";
 
 // Load Jitsi if the environment variable is set.
 if (JITSI_URL) {
@@ -23,24 +25,58 @@ if (JITSI_URL) {
 
 const {width, height} = coWebsiteManager.getGameSize();
 
+const valueGameQuality = localUserStore.getGameQualityValue();
+const fps : Phaser.Types.Core.FPSConfig = {
+    /**
+     * The minimum acceptable rendering rate, in frames per second.
+     */
+    min: valueGameQuality,
+    /**
+     * The optimum rendering rate, in frames per second.
+     */
+    target: valueGameQuality,
+    /**
+     * Use setTimeout instead of requestAnimationFrame to run the game loop.
+     */
+    forceSetTimeOut: true,
+    /**
+     * Calculate the average frame delta from this many consecutive frame intervals.
+     */
+    deltaHistory: 120,
+    /**
+     * The amount of frames the time step counts before we trust the delta values again.
+     */
+    panicMax: 20,
+    /**
+     * Apply delta smoothing during the game update to help avoid spikes?
+     */
+    smoothStep: false
+}
+
 const config: GameConfig = {
+    type: Phaser.AUTO,
     title: "WorkAdventure",
     width: width / RESOLUTION,
     height: height / RESOLUTION,
     parent: "game",
-    scene: [EntryScene, LoginScene, SelectCharacterScene, EnableCameraScene, ReconnectingScene, FourOFourScene, CustomizeScene],
+    scene: [EntryScene, LoginScene, SelectCharacterScene, EnableCameraScene, ReconnectingScene, ErrorScene, CustomizeScene, MenuScene],
     zoom: RESOLUTION,
+    fps: fps,
+    dom: {
+        createContainer: true
+    },
     physics: {
         default: "arcade",
         arcade: {
-            debug: DEBUG_MODE
+            debug: DEBUG_MODE,
         }
     },
     callbacks: {
         postBoot: game => {
-            // FIXME: we should fore WebGL in the config.
-            const renderer = game.renderer as WebGLRenderer;
-            renderer.addPipeline(OutlinePipeline.KEY, new OutlinePipeline(game));
+            const renderer = game.renderer;
+            if (renderer instanceof WebGLRenderer) {
+                renderer.pipelines.add(OutlinePipeline.KEY, new OutlinePipeline(game));
+            }
         }
     }
 };
@@ -60,6 +96,7 @@ window.addEventListener('resize', function (event) {
         }
     }
 });
+
 coWebsiteManager.onStateChange(() => {
     const {width, height} = coWebsiteManager.getGameSize();
     game.scale.resize(width / RESOLUTION, height / RESOLUTION);

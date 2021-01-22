@@ -25,13 +25,17 @@ export class Room {
             this.id = this.id.substr(0, indexOfHash);
         }
     }
-    
+
     public static getIdFromIdentifier(identifier: string, baseUrl: string, currentInstance: string): {roomId: string, hash: string} {
         let roomId = '';
         let hash = '';
         if (!identifier.startsWith('/_/') && !identifier.startsWith('/@/')) { //relative file link
-            const absoluteExitSceneUrl = new URL(identifier, baseUrl);
-            roomId = '_/'+currentInstance+'/'+absoluteExitSceneUrl.hostname + absoluteExitSceneUrl.pathname; //in case of a relative url, we need to create a public roomId
+            //Relative identifier can be deep enough to rewrite the base domain, so we cannot use the variable 'baseUrl' as the actual base url for the URL objects.
+            //We instead use 'workadventure' as a dummy base value.
+            const baseUrlObject = new URL(baseUrl);
+            const absoluteExitSceneUrl = new URL(identifier, 'http://workadventure/_/'+currentInstance+'/'+baseUrlObject.hostname+baseUrlObject.pathname);
+            roomId = absoluteExitSceneUrl.pathname; //in case of a relative url, we need to create a public roomId
+            roomId = roomId.substring(1); //remove the leading slash
             hash = absoluteExitSceneUrl.hash;
             hash = hash.substring(1); //remove the leading diese
         } else { //absolute room Id
@@ -68,8 +72,9 @@ export class Room {
                     console.log('Map ', this.id, ' resolves to URL ', data.mapUrl);
                     resolve(data.mapUrl);
                     return;
+                }).catch((reason) => {
+                    reject(reason);
                 });
-
             }
         });
     }

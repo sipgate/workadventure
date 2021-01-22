@@ -2,13 +2,14 @@ import {EnableCameraSceneName} from "./EnableCameraScene";
 import {TextField} from "../Components/TextField";
 import Image = Phaser.GameObjects.Image;
 import Rectangle = Phaser.GameObjects.Rectangle;
-import {BodyResourceDescriptionInterface, LAYERS, loadAllLayers, loadCustomTexture} from "../Entity/body_character";
+import {loadAllLayers, loadCustomTexture} from "../Entity/PlayerTexturesLoadingManager";
 import Sprite = Phaser.GameObjects.Sprite;
 import Container = Phaser.GameObjects.Container;
 import {gameManager} from "../Game/GameManager";
 import {ResizableScene} from "./ResizableScene";
 import {localUserStore} from "../../Connexion/LocalUserStore";
-import {PlayerResourceDescriptionInterface} from "../Entity/Character";
+import {addLoader} from "../Components/Loader";
+import {BodyResourceDescriptionInterface} from "../Entity/PlayerTextures";
 
 export const CustomizeSceneName = "CustomizeScene";
 
@@ -46,22 +47,22 @@ export class CustomizeScene extends ResizableScene {
     }
 
     preload() {
+        addLoader(this);
         this.load.image(CustomizeTextures.arrowRight, "resources/objects/arrow_right.png");
         this.load.image(CustomizeTextures.icon, "resources/logos/tcm_full.png");
         this.load.image(CustomizeTextures.arrowUp, "resources/objects/arrow_up.png");
         this.load.bitmapFont(CustomizeTextures.mainFont, 'resources/fonts/arcade.png', 'resources/fonts/arcade.xml');
 
-        //load all the png files
-        loadAllLayers(this.load);
-
-        // load custom layers
-        this.layers = LAYERS;
+        this.layers = loadAllLayers(this.load);
 
         const localUser = localUserStore.getLocalUser();
 
         const textures = localUser?.textures;
         if (textures) {
             for (const texture of textures) {
+                if(texture.level === -1){
+                    continue;
+                }
                 loadCustomTexture(this.load, texture);
                 const name = 'customCharacterTexture'+texture.id;
                 this.layers[texture.level].unshift({
@@ -120,13 +121,14 @@ export class CustomizeScene extends ResizableScene {
 
             gameManager.setCharacterLayers(layers);
 
-            return this.scene.start(EnableCameraSceneName);
+            this.scene.sleep(CustomizeSceneName);
+            gameManager.tryResumingGame(this, EnableCameraSceneName);
         });
 
-        this.input.keyboard.on('keydown-RIGHT', () => this.moveCursorHorizontally(1));
-        this.input.keyboard.on('keydown-LEFT', () => this.moveCursorHorizontally(-1));
-        this.input.keyboard.on('keydown-DOWN', () => this.moveCursorVertically(1));
-        this.input.keyboard.on('keydown-UP', () => this.moveCursorVertically(-1));
+        this.input.keyboard.on('keyup-RIGHT', () => this.moveCursorHorizontally(1));
+        this.input.keyboard.on('keyup-LEFT', () => this.moveCursorHorizontally(-1));
+        this.input.keyboard.on('keyup-DOWN', () => this.moveCursorVertically(1));
+        this.input.keyboard.on('keyup-UP', () => this.moveCursorVertically(-1));
 
         const customCursorPosition = localUserStore.getCustomCursorPosition();
         if (customCursorPosition) {

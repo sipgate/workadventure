@@ -1,14 +1,10 @@
 import {gameManager} from "../Game/GameManager";
 import {TextField} from "../Components/TextField";
 import {TextInput} from "../Components/TextInput";
-import {ClickButton} from "../Components/ClickButton";
 import Image = Phaser.GameObjects.Image;
-import Rectangle = Phaser.GameObjects.Rectangle;
-import {PLAYER_RESOURCES, PlayerResourceDescriptionInterface} from "../Entity/Character";
 import {cypressAsserter} from "../../Cypress/CypressAsserter";
 import {SelectCharacterSceneName} from "./SelectCharacterScene";
 import {ResizableScene} from "./ResizableScene";
-import {localUserStore} from "../../Connexion/LocalUserStore";
 
 //todo: put this constants in a dedicated file
 export const LoginSceneName = "LoginScene";
@@ -29,7 +25,7 @@ export class LoginScene extends ResizableScene {
         super({
             key: LoginSceneName
         });
-        this.name = localUserStore.getName();
+        this.name = gameManager.getPlayerName() || '';
     }
 
     preload() {
@@ -39,14 +35,6 @@ export class LoginScene extends ResizableScene {
         // Note: arcade.png from the Phaser 3 examples at: https://github.com/photonstorm/phaser3-examples/tree/master/public/assets/fonts/bitmap
         this.load.bitmapFont(LoginTextures.mainFont, 'resources/fonts/arcade.png', 'resources/fonts/arcade.xml');
         cypressAsserter.preloadFinished();
-        //add player png
-        PLAYER_RESOURCES.forEach((playerResource: PlayerResourceDescriptionInterface) => {
-            this.load.spritesheet(
-                playerResource.name,
-                playerResource.img,
-                {frameWidth: 32, frameHeight: 32}
-            );
-        });
     }
 
     create() {
@@ -55,7 +43,6 @@ export class LoginScene extends ResizableScene {
         this.textField = new TextField(this, this.game.renderer.width / 2, 50, 'Enter your name:');
         this.nameInput = new TextInput(this, this.game.renderer.width / 2, 70, 8, this.name,(text: string) => {
             this.name = text;
-            localUserStore.setName(text);
         });
 
         this.pressReturnField = new TextField(this, this.game.renderer.width / 2, 130, 'Press enter to start');
@@ -87,7 +74,9 @@ export class LoginScene extends ResizableScene {
     private login(name: string): void {
         gameManager.setPlayerName(name);
 
-        this.scene.start(SelectCharacterSceneName);
+        this.scene.stop(LoginSceneName)
+        gameManager.tryResumingGame(this, SelectCharacterSceneName);
+        this.scene.remove(LoginSceneName)
     }
 
     public onResize(ev: UIEvent): void {
